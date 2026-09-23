@@ -1,0 +1,526 @@
+﻿<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Clinical Calculator — GCS • NIHSS • PHQ-9 • Bishop</title>
+<style>
+:root{--bg:#f4f7fb;--card:#fff;--ink:#172033;--muted:#667085;--line:#dbe2ea;--primary:#2563eb;--primary2:#1d4ed8;--danger:#b42318;--ok:#087443;--warn:#b54708;--shadow:0 10px 30px rgba(16,24,40,.08)}
+*{box-sizing:border-box}body{margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:var(--bg);color:var(--ink)}
+header{background:linear-gradient(135deg,#102a56,#2563eb);color:#fff;padding:28px 22px}
+header .wrap,main{max-width:1180px;margin:auto}.eyebrow{font-size:12px;letter-spacing:.14em;text-transform:uppercase;opacity:.82;font-weight:700}
+h1{margin:5px 0 6px;font-size:30px}header p{margin:0;opacity:.9;max-width:850px}
+.tabs{position:sticky;top:0;z-index:5;background:#fff;border-bottom:1px solid var(--line);overflow:auto;white-space:nowrap}
+.tabbar{max-width:1180px;margin:auto;display:flex;gap:4px;padding:8px 10px}.tab{border:0;background:transparent;padding:11px 14px;border-radius:10px;cursor:pointer;font-weight:700;color:#475467}.tab.active{background:#e8f0ff;color:var(--primary)}
+main{padding:24px 16px 50px}.grid{display:grid;grid-template-columns:1.5fr .9fr;gap:18px}.card{background:var(--card);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);padding:20px}.card h2{font-size:20px;margin:0 0 5px}.sub{color:var(--muted);font-size:13px;margin-bottom:18px}
+.formgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px}.full{grid-column:1/-1}
+label{font-weight:700;font-size:13px;display:block;margin-bottom:6px}select,input{width:100%;padding:11px 12px;border:1px solid #cbd5e1;border-radius:10px;background:#fff;color:var(--ink);font-size:14px}select:focus,input:focus{outline:3px solid #dbeafe;border-color:#60a5fa}
+.item{border:1px solid var(--line);border-radius:13px;padding:14px;margin:10px 0}.item-title{font-weight:800;margin-bottom:8px}.opts{display:grid;gap:7px}.opt{display:flex;align-items:flex-start;gap:8px;font-size:13px;font-weight:500;cursor:pointer}.opt input{width:auto;margin-top:3px}
+.result{background:#f8fafc;border:1px solid var(--line);border-radius:14px;padding:18px;position:sticky;top:76px}.score{font-size:46px;font-weight:850;line-height:1;margin:6px 0}.badge{display:inline-block;padding:5px 9px;border-radius:999px;font-size:12px;font-weight:800;background:#eef2ff;color:#3730a3}.badge.ok{background:#ecfdf3;color:#027a48}.badge.warn{background:#fffaeb;color:#b54708}.badge.danger{background:#fef3f2;color:#b42318}
+.breakdown{margin-top:14px;border-top:1px solid var(--line);padding-top:12px;font-size:13px}.row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px dashed #e5e7eb}.row:last-child{border-bottom:0}
+.actions{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap}.btn{border:0;border-radius:10px;padding:10px 14px;font-weight:800;cursor:pointer}.primary{background:var(--primary);color:#fff}.primary:hover{background:var(--primary2)}.secondary{background:#eef2f6;color:#344054}
+.notice{font-size:12px;line-height:1.55;color:#667085;background:#f8fafc;border-left:4px solid #94a3b8;padding:10px 12px;margin-top:15px}.warning{border-left-color:#f79009}.danger-note{border-left-color:#f04438}
+.section{display:none}.section.active{display:block}.table{width:100%;border-collapse:collapse;font-size:12px;margin-top:14px}.table th,.table td{border:1px solid var(--line);padding:7px;text-align:left}.table th{background:#f8fafc}
+footer{max-width:1180px;margin:0 auto;padding:0 16px 35px;color:#667085;font-size:12px}.print-only{display:none}
+#historyLog .item { background: #fff; }
+.hero-img { width: 100%; height: auto; max-height: 180px; object-fit: cover; border-radius: 12px; margin-bottom: 18px; border: 1px solid var(--line); }
+
+/* Styles Tampilan Pencetakan (Print Preview) */
+#printContainer { display: none; max-width: 900px; margin: 30px auto; background: #fff; padding: 28px; border-radius: 16px; box-shadow: var(--shadow); border: 1px solid var(--line); }
+.print-actions-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 2px solid var(--line); }
+.print-patient-box { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; background: #f8fafc; padding: 14px 18px; border-radius: 12px; border: 1px solid var(--line); margin-bottom: 20px; font-size: 14px; }
+
+@media(max-width:850px){.grid{grid-template-columns:1fr}.result{position:static}.formgrid{grid-template-columns:1fr}.full{grid-column:auto}h1{font-size:24px}}
+@media print{
+  #headerApp, #navTabs, #mainApp, #footerApp, #references, .print-actions-bar { display: none !important; }
+  #printContainer { display: block !important; position: absolute; left: 0; top: 0; width: 100% !important; margin: 0 !important; padding: 20px !important; box-shadow: none !important; border: none !important; }
+  body { background: #fff !important; color: #000 !important; }
+  .print-only { display: block !important; }
+}
+</style>
+</head>
+<body>
+
+<header id="headerApp"><div class="wrap">
+<div class="eyebrow">Aplikasi Clinical Calculator • Edisi v3.1</div>
+<h1>Clinical Calculator</h1>
+<p>GCS • NIHSS • PHQ-9 • Bishop Score + qSOFA • CURB-65 • CHA₂DS₂-VASc • Wells PE</p>
+</div></header>
+
+<nav id="navTabs" class="tabs"><div class="tabbar">
+<button class="tab active" data-tab="gcs" aria-label="Tab GCS">GCS</button>
+<button class="tab" data-tab="nihss" aria-label="Tab NIHSS">NIHSS</button>
+<button class="tab" data-tab="phq9" aria-label="Tab PHQ-9">PHQ-9</button>
+<button class="tab" data-tab="bishop" aria-label="Tab Bishop">Bishop</button>
+<button class="tab" data-tab="qsofa" aria-label="Tab qSOFA">qSOFA</button>
+<button class="tab" data-tab="curb" aria-label="Tab CURB-65">CURB-65</button>
+<button class="tab" data-tab="cha" aria-label="Tab CHA2DS2-VASc">CHA₂DS₂-VASc</button>
+<button class="tab" data-tab="wells" aria-label="Tab Wells PE">Wells PE</button>
+<button class="tab" data-tab="riwayat" aria-label="Tab Riwayat Perhitungan">🕒 Riwayat</button>
+<button class="tab" data-tab="panduan" aria-label="Tab Buku Panduan">📖 Panduan</button>
+<button class="tab" onclick="document.getElementById('references').scrollIntoView({behavior:'smooth'})" aria-label="Tabel Referensi">📚 Referensi</button>
+</div></nav>
+
+<main id="mainApp">
+
+<!-- Identitas Pasien Global -->
+<div class="card" style="margin-bottom: 20px; background: #fff;">
+  <div style="font-weight:800; margin-bottom:12px; color:var(--ink); font-size:15px; display:flex; align-items:center; gap:8px;">
+    <span>👤</span> Identitas Pasien
+  </div>
+  <div class="formgrid">
+    <div>
+      <label for="patientName">Nama Pasien</label>
+      <input type="text" id="patientName" placeholder="Masukkan nama pasien...">
+    </div>
+    <div>
+      <label for="patientRM">No. Rekam Medis (RM)</label>
+      <input type="text" id="patientRM" placeholder="mis. RM-123456">
+    </div>
+  </div>
+</div>
+
+<!-- GCS -->
+<section id="gcs" class="section active">
+<div class="grid"><div class="card">
+<img src="https://images.unsplash.com/photo-1551076805-e1869033e561?auto=format&fit=crop&w=800&q=80" alt="Ilustrasi Neurologi GCS" class="hero-img">
+<h2>Glasgow Coma Scale (GCS)</h2><div class="sub">Pilih respons terbaik untuk Eyes, Verbal, dan Motor. Gunakan NT bila komponen tidak dapat diuji.</div>
+<div class="formgrid">
+<div><label>Eye opening (E)</label><select id="gE"><option value="4">4 — Spontan</option><option value="3">3 — Terhadap suara</option><option value="2">2 — Terhadap tekanan</option><option value="1">1 — Tidak ada</option><option value="NT">NT — Tidak dapat dinilai</option></select></div>
+<div><label>Verbal response (V)</label><select id="gV"><option value="5">5 — Orientasi baik</option><option value="4">4 — Bingung</option><option value="3">3 — Kata-kata</option><option value="2">2 — Suara</option><option value="1">1 — Tidak ada</option><option value="NT">NT — Tidak dapat dinilai</option></select></div>
+<div class="full"><label>Motor response (M)</label><select id="gM"><option value="6">6 — Mengikuti perintah</option><option value="5">5 — Melokalisasi</option><option value="4">4 — Fleksi normal</option><option value="3">3 — Fleksi abnormal</option><option value="2">2 — Ekstensi</option><option value="1">1 — Tidak ada</option><option value="NT">NT — Tidak dapat dinilai</option></select></div>
+</div>
+<div class="actions"><button class="btn primary" onclick="calcGCS()">Hitung</button><button class="btn secondary" onclick="resetSection('gcs')">Reset</button><button class="btn secondary" onclick="openPrintView('Glasgow Coma Scale (GCS)', 'gcsResult')">Cetak</button></div>
+</div><div class="result" id="gcsResult"></div></div></section>
+
+<!-- NIHSS -->
+<section id="nihss" class="section">
+<div class="grid"><div class="card">
+<img src="https://images.unsplash.com/photo-1559757175-5700dde675bc?auto=format&fit=crop&w=800&q=80" alt="Ilustrasi Pemeriksaan Stroke" class="hero-img">
+<h2>NIH Stroke Scale (NIHSS)</h2><div class="sub">Form ringkas 11 domain resmi NIHSS. Skor maksimum 42.</div><div id="nihssForm"></div>
+<div class="actions"><button class="btn primary" onclick="calcNIHSS()">Hitung NIHSS</button><button class="btn secondary" onclick="resetSection('nihss')">Reset</button><button class="btn secondary" onclick="openPrintView('NIH Stroke Scale (NIHSS)', 'nihssResult')">Cetak</button></div>
+</div><div class="result" id="nihssResult"></div></div></section>
+
+<!-- PHQ -->
+<section id="phq9" class="section">
+<div class="grid"><div class="card">
+<img src="https://images.unsplash.com/photo-1474418397713-7ede21d49118?auto=format&fit=crop&w=800&q=80" alt="Ilustrasi Kesehatan Mental PHQ-9" class="hero-img">
+<h2>PHQ-9</h2><div class="sub">Frekuensi gejala selama <b>2 minggu terakhir</b>. Pilih satu jawaban tiap item.</div><div id="phqForm"></div>
+<div class="actions"><button class="btn primary" onclick="calcPHQ()">Hitung PHQ-9</button><button class="btn secondary" onclick="resetSection('phq9')">Reset</button><button class="btn secondary" onclick="openPrintView('PHQ-9 Depression Scale', 'phqResult')">Cetak</button></div>
+</div><div class="result" id="phqResult"></div></div></section>
+
+<!-- Bishop -->
+<section id="bishop" class="section">
+<div class="grid"><div class="card">
+<img src="https://images.unsplash.com/photo-1531983412531-1f49a365ffed?auto=format&fit=crop&w=800&q=80" alt="Ilustrasi Obstetri Bishop Score" class="hero-img">
+<h2>Bishop Score</h2><div class="sub">Penilaian serviks sebelum induksi: dilatasi, efasemen, station, konsistensi, posisi.</div>
+<div class="formgrid">
+<div><label>Dilatasi</label><select id="bD"><option value="0">Tertutup</option><option value="1">1–2 cm</option><option value="2">3–4 cm</option><option value="3">≥5 cm</option></select></div>
+<div><label>Efasemen</label><select id="bE"><option value="0">0–30%</option><option value="1">40–50%</option><option value="2">60–70%</option><option value="3">≥80%</option></select></div>
+<div><label>Fetal station</label><select id="bS"><option value="0">−3</option><option value="1">−2</option><option value="2">−1 / 0</option><option value="3">+1 / +2</option></select></div>
+<div><label>Konsistensi serviks</label><select id="bC"><option value="0">Firm / keras</option><option value="1">Medium / sedang</option><option value="2">Soft / lunak</option></select></div>
+<div><label>Posisi serviks</label><select id="bP"><option value="0">Posterior</option><option value="1">Mid / tengah</option><option value="2">Anterior</option></select></div>
+</div>
+<div class="actions"><button class="btn primary" onclick="calcBishop()">Hitung Bishop</button><button class="btn secondary" onclick="resetSection('bishop')">Reset</button><button class="btn secondary" onclick="openPrintView('Bishop Score', 'bishopResult')">Cetak</button></div>
+</div><div class="result" id="bishopResult"></div></div></section>
+
+<!-- qSOFA -->
+<section id="qsofa" class="section">
+<div class="grid"><div class="card">
+<img src="https://images.unsplash.com/photo-1516549655169-df83a0774514?auto=format&fit=crop&w=800&q=80" alt="Ilustrasi Klinis Sepsis" class="hero-img">
+<h2>qSOFA</h2><div class="sub">Tiga kriteria bedside: RR ≥22/menit, perubahan status mental, SBP ≤100 mmHg.</div>
+<div class="formgrid"><div><label>Frekuensi napas /menit</label><input id="qRR" type="number" min="0" max="80" placeholder="mis. 24"></div><div><label>Sistolik (mmHg)</label><input id="qSBP" type="number" min="0" max="300" placeholder="mis. 95"></div><div class="full"><label>Status mental</label><select id="qMent"><option value="0">Tidak berubah / GCS 15</option><option value="1">Berubah / GCS &lt;15</option></select></div></div>
+<div class="actions"><button class="btn primary" onclick="calcQSOFA()">Hitung</button><button class="btn secondary" onclick="resetSection('qsofa')">Reset</button><button class="btn secondary" onclick="openPrintView('qSOFA Score', 'qsofaResult')">Cetak</button></div>
+</div><div class="result" id="qsofaResult"></div></div></section>
+
+<!-- CURB -->
+<section id="curb" class="section">
+<div class="grid"><div class="card">
+<img src="https://images.unsplash.com/photo-1584036561566-baf8f5f1b144?auto=format&fit=crop&w=800&q=80" alt="Ilustrasi Paru-paru Pneumonia" class="hero-img">
+<h2>CURB-65</h2><div class="sub">Untuk stratifikasi derajat keparahan pneumonia komunitas pada dewasa (>18 tahun).</div>
+<div class="formgrid"><div><label>Confusion</label><select id="cC"><option value="0">Tidak</option><option value="1">Ya</option></select></div><div><label>Urea &gt;7 mmol/L</label><select id="cU"><option value="0">Tidak / tidak diketahui</option><option value="1">Ya</option></select></div><div><label>RR ≥30/menit</label><select id="cR"><option value="0">Tidak</option><option value="1">Ya</option></select></div><div><label>SBP &lt;90 atau DBP ≤60 mmHg</label><select id="cB"><option value="0">Tidak</option><option value="1">Ya</option></select></div><div><label>Usia ≥65 tahun</label><select id="cA"><option value="0">Tidak</option><option value="1">Ya</option></select></div></div>
+<div class="actions"><button class="btn primary" onclick="calcCURB()">Hitung</button><button class="btn secondary" onclick="resetSection('curb')">Reset</button><button class="btn secondary" onclick="openPrintView('CURB-65 Risk Score', 'curbResult')">Cetak</button></div>
+</div><div class="result" id="curbResult"></div></div></section>
+
+<!-- CHA -->
+<section id="cha" class="section">
+<div class="grid"><div class="card">
+<img src="https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?auto=format&fit=crop&w=800&q=80" alt="Ilustrasi Jantung Kardiologi" class="hero-img">
+<h2>CHA₂DS₂-VASc</h2><div class="sub">Stratifikasi risiko stroke pada pasien dengan fibrilasi atrium (khusus non-valvular AF).</div>
+<div class="formgrid">
+<div><label>Congestive heart failure / LV dysfunction</label><select id="aCHF"><option value="0">Tidak</option><option value="1">Ya</option></select></div>
+<div><label>Hipertensi</label><select id="aHT"><option value="0">Tidak</option><option value="1">Ya</option></select></div>
+<div><label>Usia</label><select id="aAge"><option value="0">&lt;65</option><option value="1">65–74</option><option value="2">≥75</option></select></div>
+<div><label>Diabetes mellitus</label><select id="aDM"><option value="0">Tidak</option><option value="1">Ya</option></select></div>
+<div><label>Stroke/TIA/systemic embolism sebelumnya</label><select id="aStroke"><option value="0">Tidak</option><option value="2">Ya</option></select></div>
+<div><label>Vascular disease (MI/PAD/aortic plaque)</label><select id="aVasc"><option value="0">Tidak</option><option value="1">Ya</option></select></div>
+<div><label>Jenis kelamin perempuan</label><select id="aSex"><option value="0">Tidak</option><option value="1">Ya</option></select></div>
+</div><div class="actions"><button class="btn primary" onclick="calcCHA()">Hitung</button><button class="btn secondary" onclick="resetSection('cha')">Reset</button><button class="btn secondary" onclick="openPrintView('CHA₂DS₂-VASc Score', 'chaResult')">Cetak</button></div>
+</div><div class="result" id="chaResult"></div></div></section>
+
+<!-- Wells -->
+<section id="wells" class="section">
+<div class="grid"><div class="card">
+<img src="https://images.unsplash.com/photo-1583912265927-8cb3dc6fa33c?auto=format&fit=crop&w=800&q=80" alt="Ilustrasi Diagnostik Medis" class="hero-img">
+<h2>Wells — Pulmonary Embolism</h2><div class="sub">Clinical prediction rule. Tidak terkalibrasi baik untuk populasi ibu hamil.</div>
+<div id="wellsForm"></div>
+<div class="actions"><button class="btn primary" onclick="calcWells()">Hitung Wells PE</button><button class="btn secondary" onclick="resetSection('wells')">Reset</button><button class="btn secondary" onclick="openPrintView('Wells PE Score', 'wellsResult')">Cetak</button></div>
+</div><div class="result" id="wellsResult"></div></div></section>
+
+<!-- Riwayat -->
+<section id="riwayat" class="section">
+<div class="grid"><div class="card full" style="grid-column: 1/-1;">
+<h2>Riwayat Perhitungan (Sesi Ini)</h2>
+<div class="sub">Data hanya disimpan sementara di memori tab browser ini dan akan otomatis musnah bila ditutup.</div>
+<div id="historyLog" style="margin-bottom:15px;"></div>
+<div class="actions">
+<button class="btn secondary" onclick="sessionStorage.removeItem('clinicalCalcHistory');renderHistory();">Hapus Riwayat Sesi</button>
+<button class="btn secondary" onclick="openPrintView('Riwayat Perhitungan Klinis', 'historyLog')">Cetak</button>
+</div>
+</div></div></section>
+
+<!-- Buku Panduan -->
+<section id="panduan" class="section">
+<div class="grid"><div class="card full" style="grid-column: 1/-1;">
+<h2>📖 Buku Panduan Penggunaan & Interpretasi Klinis</h2>
+<div class="sub">Panduan teknis pengoperasian aplikasi kalkulator klinis beserta acuan interpretasi skor.</div>
+
+<div class="notice">
+<b>Keamanan & Privasi Data:</b> Seluruh kalkulasi dilakukan secara lokal pada peramban web (<i>client-side</i>). Data pasien maupun hasil perhitungan tidak dikirim ke server mana pun untuk menjamin kerahasiaan data medis.
+</div>
+
+<h3 style="margin-top:22px; font-size:16px;">1. Alur Pengoperasian Aplikasi</h3>
+<ul style="line-height:1.65; font-size:13px; padding-left:20px;">
+  <li><b>Identitas Pasien:</b> Masukkan Nama Pasien dan No. Rekam Medis (RM) pada form paling atas. Data ini akan disematkan otomatis pada resume cetak dan riwayat sesi.</li>
+  <li><b>Pemilihan Kalkulator:</b> Klik tab instrumen di bagian atas untuk berpindah antar kalkulator klinis.</li>
+  <li><b>Penghitungan Skor:</b> Pilih opsi parameter yang sesuai, lalu klik tombol <b>Hitung</b>. Hasil interpretasi akan langsung tampil pada kartu hasil.</li>
+  <li><b>Pencetakan Resume:</b> Klik tombol <b>Cetak</b> pada instrumen untuk membuka cetak pratinjau ringkas yang siap dicetak langsung atau disimpan sebagai format PDF.</li>
+  <li><b>Riwayat Sesi:</b> Setiap kali kalkulasi dilakukan, skor akan tersimpan sementara di tab <b>🕒 Riwayat</b> selama tab browser tidak ditutup.</li>
+</ul>
+
+<h3 style="margin-top:22px; font-size:16px;">2. Interpretasi Instrumen Klinis</h3>
+<table class="table" style="margin-top:10px;">
+  <thead>
+    <tr>
+      <th style="width:20%;">Instrumen</th>
+      <th style="width:30%;">Kategori / Skor</th>
+      <th>Interpretasi & Catatan Klinis</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><b>Glasgow Coma Scale (GCS)</b></td>
+      <td>
+        • Mild (Ringan): 13–15<br>
+        • Moderate (Sedang): 9–12<br>
+        • Severe (Berat): ≤8
+      </td>
+      <td>
+        Penilaian derajat kesadaran melalui respons Eyes, Verbal, dan Motor. Komponen yang tidak dapat diuji diberi tanda <b>NT (Not Testable)</b> dan tidak dihitung sebagai angka nol.
+      </td>
+    </tr>
+    <tr>
+      <td><b>NIH Stroke Scale (NIHSS)</b></td>
+      <td>
+        • 0: Tidak ada defisit terukur<br>
+        • 1–4: Stroke ringan<br>
+        • 5–15: Stroke sedang<br>
+        • 16–20: Stroke sedang–berat<br>
+        • 21–42: Stroke berat
+      </td>
+      <td>
+        Evaluasi kuantitatif defisit neurologis pada stroke akut (11 domain/15 item). Jika ada item yang tidak dapat dinilai (mis. amputasi), pilih opsi <b>UN</b> untuk menghasilkan skor parsial.
+      </td>
+    </tr>
+    <tr>
+      <td><b>PHQ-9 (Depression Scale)</b></td>
+      <td>
+        • 0–4: Minimal<br>
+        • 5–9: Depresi ringan<br>
+        • 10–14: Depresi sedang<br>
+        • 15–19: Depresi sedang–berat<br>
+        • 20–27: Depresi berat
+      </td>
+      <td>
+        Skrining derajat depresi 2 minggu terakhir. <b>Perhatian:</b> Bila Item 9 (pikiran menyakiti diri/mati) bernilai positif (>0), evaluasi keselamatan klinis wajib dilakukan segera.
+      </td>
+    </tr>
+    <tr>
+      <td><b>Bishop Score</b></td>
+      <td>
+        • ≤5: Unfavorable (Belum matang)<br>
+        • 6–7: Intermediate<br>
+        • ≥8: Favorable (Kematangan baik)
+      </td>
+      <td>
+        Penilaian maturitas serviks sebelum induksi persalinan. Skor ≤5 mengindikasikan Perlunya prosedur pematangan serviks (<i>cervical ripening</i>).
+      </td>
+    </tr>
+    <tr>
+      <td><b>qSOFA (Quick SOFA)</b></td>
+      <td>
+        • Skor 0–1: Risiko rendah<br>
+        • Skor ≥2: Risiko tinggi mortalitas / perawatan ICU
+      </td>
+      <td>
+        Skrining cepat bedside sepsis (RR ≥22, Altered mentation, SBP ≤100 mmHg). Skor ≥2 memerlukan evaluasi klinis ketat dan penelusuran kriteria SOFA lengkap.
+      </td>
+    </tr>
+    <tr>
+      <td><b>CURB-65</b></td>
+      <td>
+        • Skor 0–1: Risiko rendah (Rawat jalan)<br>
+        • Skor 2: Risiko sedang (Pertimbangkan rawat inap)<br>
+        • Skor 3–5: Risiko tinggi (Rawat inap / evaluasi ICU)
+      </td>
+      <td>
+        Stratifikasi risiko mortalitas pada pasien Pneumonia Komunitas (CAP) usia >18 tahun berdasarkan parameter Confusion, Uremia, RR, BP, dan Usia.
+      </td>
+    </tr>
+    <tr>
+      <td><b>CHA₂DS₂-VASc</b></td>
+      <td>
+        • Skor 0 (Pria) / 1 (Wanita): Risiko rendah<br>
+        • Skor ≥1 (Pria) / ≥2 (Wanita): Risiko sedang–tinggi
+      </td>
+      <td>
+        Stratifikasi risiko stroke tromboemboli pada pasien Fibrilasi Atrium (non-valvular AF) untuk dasar pertimbangan terapi antikoagulan.
+      </td>
+    </tr>
+    <tr>
+      <td><b>Wells PE (Pulmonary Embolism)</b></td>
+      <td>
+        • Skor ≤4: PE Unlikely (Kecil kemungkinan)<br>
+        • Skor >4: PE Likely (Besar kemungkinan)
+      </td>
+      <td>
+        Aturan prediksi klinis Emboli Paru. Skor ≤4 mengarahkan pemeriksaan lanjutan ke uji D-Dimer, sedangkan skor >4 mengarahkan ke CT Pulmonary Angiography (CTPA).
+      </td>
+    </tr>
+  </tbody>
+</table>
+</div></div></section>
+
+</main>
+
+<div id="printContainer">
+  <div class="print-actions-bar">
+    <button class="btn secondary" onclick="closePrintView()">← Kembali</button>
+    <button class="btn primary" onclick="window.print()">🖨️ Cetak Dokumen</button>
+  </div>
+  <div>
+    <h2 style="margin:0 0 4px; font-size:24px;">RESUME KALKULASI KLINIS</h2>
+    <div style="font-size:12px; color:var(--muted); text-transform:uppercase; letter-spacing:0.1em; font-weight:700;">Clinical Calculator Report</div>
+    <hr style="border:0; border-top:2px solid var(--ink); margin:16px 0;">
+    <div class="print-patient-box">
+      <div><strong>Nama Pasien:</strong> <span id="printPName">—</span></div>
+      <div><strong>No. RM:</strong> <span id="printPRM">—</span></div>
+      <div><strong>Tanggal / Waktu:</strong> <span id="printPDate">—</span></div>
+    </div>
+    <div id="printBody" style="margin-top:20px;"></div>
+    <div style="margin-top:35px; font-size:11px; color:var(--muted); border-top:1px solid var(--line); padding-top:12px;">
+      Laporan dicetak secara otomatis melalui Aplikasi Clinical Calculator.
+    </div>
+  </div>
+</div>
+
+<footer id="footerApp">Aplikasi Clinical Calculator. Data tidak dikirim ke server; perhitungan dilakukan di browser. Untuk penggunaan klinis, verifikasi instrumen, populasi, versi guideline, dan protokol institusi yang berlaku.</footer>
+
+<section id="references" class="card" style="margin-top:18px; max-width:1180px; margin-left:auto; margin-right:auto;">
+<h2>📚 Literatur & Referensi Klinis</h2>
+<div class="sub">Sumber primer/guideline yang digunakan untuk scoring dan catatan interpretasi pada aplikasi. Diakses/ditinjau ulang September 2026.</div>
+<table class="table">
+<tr><th>Instrumen</th><th>Sumber utama</th><th>Catatan implementasi</th></tr>
+<tr><td>GCS</td><td>Glasgow Coma Scale — structured approach / official GCS Aid & FAQ</td><td>E/V/M dilaporkan terpisah; NT tidak dikonversi menjadi 1 atau 0.</td></tr>
+<tr><td>NIHSS</td><td>NINDS/NIH — NIH Stroke Scale</td><td>15 item; skor maksimum 42; pemeriksaan mengikuti instruksi resmi.</td></tr>
+<tr><td>PHQ-9</td><td>Kroenke, Spitzer & Williams; PHQ Screeners</td><td>9 item, 0–27; item 9 memerlukan perhatian keselamatan klinis bila positif.</td></tr>
+<tr><td>Bishop</td><td>ACOG Practice Bulletin No. 107 (2009, reaffirmed)</td><td>0–13; ACOG menyatakan skor &lt;6 dapat berarti serviks belum siap.</td></tr>
+<tr><td>qSOFA</td><td>Surviving Sepsis Campaign — Adult Guidelines</td><td>RR ≥22, altered mentation, SBP ≤100. Bukan alat tunggal untuk skrining sepsis di rumah sakit.</td></tr>
+<tr><td>CURB-65</td><td>ATS/IDSA CAP guideline + implementation resources</td><td>Confusion, urea, RR, BP, age ≥65. Dipakai sebagai bagian dari penilaian klinis keseluruhan.</td></tr>
+<tr><td>CHA₂DS₂-VASc</td><td>2023 ACC/AHA/ACCP/HRS Guideline for AF</td><td>Validated risk score; keputusan antikoagulasi perlu mempertimbangkan risiko tromboemboli tahunan dan faktor klinis lain.</td></tr>
+<tr><td>Wells PE</td><td>NICE NG158 — VTE diagnosis/management</td><td>2-level PE Wells: &gt;4 PE likely; ≤4 PE unlikely.</td></tr>
+</table>
+</section>
+
+<script>
+const $=id=>document.getElementById(id);
+function esc(s){return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
+function resultBox(id,score,max,label,cls='ok',extra=''){ $(id).innerHTML=`<div class="sub">HASIL</div><div class="score">${score}${max?`<span style="font-size:18px;color:#667085"> / ${max}</span>`:''}</div><span class="badge ${cls}">${esc(label)}</span>${extra?`<div class="breakdown">${extra}</div>`:''}` }
+function rows(arr){return arr.map(x=>`<div class="row"><span>${esc(x[0])}</span><b>${esc(x[1])}</b></div>`).join('')}
+
+function openPrintView(calcTitle, resultElemId){
+  const nameVal = $('patientName').value.trim() || '—';
+  const rmVal = $('patientRM').value.trim() || '—';
+  const dateStr = new Date().toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' });
+
+  $('printPName').innerText = nameVal;
+  $('printPRM').innerText = rmVal;
+  $('printPDate').innerText = dateStr;
+
+  const resElem = $(resultElemId);
+  if(resElem){
+    $('printBody').innerHTML = `<h3 style="margin-top:0; font-size:18px;">${calcTitle}</h3>` + resElem.innerHTML;
+  } else {
+    $('printBody').innerHTML = '<p>Tidak ada hasil untuk dicetak.</p>';
+  }
+
+  $('headerApp').style.display = 'none';$('navTabs').style.display = 'none';
+  $('mainApp').style.display = 'none';$('footerApp').style.display = 'none';
+  $('references').style.display = 'none';$('printContainer').style.display = 'block';
+  window.scrollTo(0, 0);
+}
+
+function closePrintView(){
+  $('printContainer').style.display = 'none';$('headerApp').style.display = 'block';
+  $('navTabs').style.display = 'block';$('mainApp').style.display = 'block';
+  $('footerApp').style.display = 'block';$('references').style.display = 'block';
+  window.scrollTo(0, 0);
+}
+
+function resetSection(id){
+  const sec = $(id);
+  if(!sec) return;
+
+  sec.querySelectorAll('select').forEach(el => el.selectedIndex = 0);
+  sec.querySelectorAll('input[type="number"], input[type="text"]').forEach(el => el.value = '');
+  sec.querySelectorAll('input[type="checkbox"]').forEach(el => el.checked = false);
+
+  const radiosByName = {};
+  sec.querySelectorAll('input[type="radio"]').forEach(el => {
+    if(!radiosByName[el.name]) radiosByName[el.name] = [];
+    radiosByName[el.name].push(el);
+  });
+  for(let name in radiosByName){
+    radiosByName[name].forEach((r, idx) => r.checked = (idx === 0));
+  }
+
+  switch(id){
+    case 'gcs': calcGCS(); break;
+    case 'nihss': calcNIHSS(); break;
+    case 'phq9': calcPHQ(); break;
+    case 'bishop': calcBishop(); break;
+    case 'qsofa': calcQSOFA(); break;
+    case 'curb': calcCURB(); break;
+    case 'cha': calcCHA(); break;
+    case 'wells': calcWells(); break;
+  }
+}
+
+document.querySelectorAll('.tab').forEach(b=>b.addEventListener('click', ()=>{
+  if(!b.dataset.tab) return;
+  document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+  b.classList.add('active');
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  if($(b.dataset.tab))$(b.dataset.tab).classList.add('active');
+  if(b.dataset.tab==='riwayat') renderHistory();
+}));
+
+function saveToHistory(calcName, score, details) {
+  let pName = $('patientName') ?$('patientName').value.trim() : '';
+  let history = JSON.parse(sessionStorage.getItem('clinicalCalcHistory') || '[]');
+  history.push({
+    time: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
+    patient: pName || 'Tanpa Nama',
+    calculator: calcName,
+    result: score,
+    notes: details
+  });
+  sessionStorage.setItem('clinicalCalcHistory', JSON.stringify(history));
+}
+
+function renderHistory() {
+  let hist = JSON.parse(sessionStorage.getItem('clinicalCalcHistory') || '[]');
+  let html = hist.length ? hist.map(h => `<div class="item" style="display:flex; justify-content:space-between; align-items:center;"><div><b>${h.time} - ${h.calculator}</b> ${h.patient !== 'Tanpa Nama' ? `<span class="badge" style="margin-left:6px;">👤 ${esc(h.patient)}</span>` : ''}<br><small style="color:var(--muted)">${h.notes}</small></div><div class="score" style="font-size:24px; margin:0;">${h.result}</div></div>`).reverse().join('') : '<div class="notice">Belum ada riwayat perhitungan pada sesi ini.</div>';
+  let el = $('historyLog');
+  if(el) el.innerHTML = html;
+}
+
+function calcGCS(){
+  let e=$('gE').value,v=$('gV').value,m=$('gM').value;
+  if([e,v,m].includes('NT')){
+    resultBox('gcsResult','NT','', 'Komponen tidak dapat diuji','warn',rows([['E',e],['V',v],['M',m]]));
+    saveToHistory('GCS', 'NT', 'Terdapat komponen tidak teruji (NT)');
+    return;
+  }
+  let s=+e+(+v)+(+m), lab=s>=13?'Mild / GCS 13–15':s>=9?'Moderate / GCS 9–12':'Severe / GCS ≤8';
+  let cls=s>=13?'ok':s>=9?'warn':'danger';
+  resultBox('gcsResult',s,15,lab,cls,rows([['Eye',e],['Verbal',v],['Motor',m],['Format','E'+e+' V'+v+' M'+m]]));
+  saveToHistory('GCS', s, lab);
+}
+
+const nihItems=[['1a. Level of consciousness',['0 — Alert','1 — Tidak sepenuhnya alert','2 — Membutuhkan stimulasi berulang','3 — Tidak responsif']],['1b. LOC questions',['0 — Kedua benar','1 — Satu benar','2 — Keduanya salah']],['1c. LOC commands',['0 — Kedua benar','1 — Satu benar','2 — Keduanya salah']],['2. Best gaze',['0 — Normal','1 — Paresis gaze parsial','2 — Deviasi paksa / total gaze paresis']],['3. Visual fields',['0 — Tidak ada kehilangan','1 — Hemianopia parsial','2 — Hemianopia komplet','3 — Bilateral blindness']],['4. Facial palsy',['0 — Normal','1 — Paralisis minor','2 — Paralisis parsial','3 — Paralisis komplet']],['5. Motor arm — Left',['0 — Tidak drift','1 — Drift','2 — Melawan gravitasi','3 — Tidak melawan gravitasi','4 — Tidak ada gerakan','UN — Amputasi']],['5. Motor arm — Right',['0 — Tidak drift','1 — Drift','2 — Melawan gravitasi','3 — Tidak melawan gravitasi','4 — Tidak ada gerakan','UN — Amputasi']],['6. Motor leg — Left',['0 — Tidak drift','1 — Drift','2 — Melawan gravitasi','3 — Tidak melawan gravitasi','4 — Tidak ada gerakan','UN — Amputasi']],['6. Motor leg — Right',['0 — Tidak drift','1 — Drift','2 — Melawan gravitasi','3 — Tidak melawan gravitasi','4 — Tidak ada gerakan','UN — Amputasi']],['7. Limb ataxia',['0 — Tidak ada','1 — Satu anggota gerak','2 — Dua anggota gerak']],['8. Sensory',['0 — Normal','1 — Kehilangan ringan–sedang','2 — Kehilangan berat–total']],['9. Best language',['0 — Normal','1 — Afasia ringan–sedang','2 — Afasia berat','3 — Mute / global aphasia','UN — Intubasi']],['10. Dysarthria',['0 — Normal','1 — Ringan–sedang','2 — Berat / anarthria','UN — Intubasi']],['11. Extinction / inattention',['0 — Tidak ada','1 — Inattention ringan','2 — Neglect berat']]];
+$('nihssForm').innerHTML=nihItems.map((it,i)=>`<div class="item"><div class="item-title">${it[0]}</div><div class="opts">${it[1].map((o,j)=>{let val = o.startsWith('UN') ? 'UN' : parseInt(o); return `<label class="opt"><input type="radio" name="n${i}" value="${val}" ${j===0?'checked':''}>${esc(o)}</label>`}).join('')}</div></div>`).join('');
+
+function calcNIHSS(){
+  let nodes = document.querySelectorAll('#nihssForm input[type="radio"]:checked');
+  let vals = Array.from(nodes).map(n => n.value);
+  let hasUN = vals.includes('UN');
+  let s = vals.reduce((a, b) => a + (b === 'UN' ? 0 : +b), 0);
+  let lab = s === 0 ? 'Tidak ada defisit terukur' : s <= 4 ? 'Ringan' : s <= 15 ? 'Sedang' : s <= 20 ? 'Sedang–berat' : 'Berat';
+  if (hasUN) lab += ' (Skor Parsial)';
+  let cls = s === 0 || s <= 4 ? 'ok' : s <= 15 ? 'warn' : 'danger';
+  let extraHtml = rows(nihItems.map((x, i) => [x[0], vals[i]]));
+  resultBox('nihssResult', s, 42, lab, cls, extraHtml);
+  saveToHistory('NIHSS', s + (hasUN ? ' (Parsial)' : ''), lab);
+}
+
+const phqItems=[['1. Minat/kesenangan berkurang?'],['2. Merasa sedih/tertekan?'],['3. Sulit tidur/terganggu?'],['4. Merasa lelah?'],['5. Nafsu makan buruk/berlebihan?'],['6. Merasa buruk tentang diri sendiri?'],['7. Sulit berkonsentrasi?'],['8. Bergerak sangat lambat/gelisah?'],['9. Pikiran lebih baik mati/menyakiti diri?']];
+$('phqForm').innerHTML=phqItems.map((it,i)=>`<div class="item"><div class="item-title">${it[0]}</div><div class="opts">${['0 — Tidak sama sekali','1 — Beberapa hari','2 — > Separuh hari','3 — Hampir setiap hari'].map((o,j)=>`<label class="opt"><input type="radio" name="p${i}" value="${j}" ${j===0?'checked':''}>${o}</label>`).join('')}</div></div>`).join('');
+
+function calcPHQ(){
+  let v=phqItems.map((_,i)=>+document.querySelector(`input[name=p${i}]:checked`).value),s=v.reduce((a,b)=>a+b,0);
+  let lab=s<=4?'Minimal':s<=9?'Ringan':s<=14?'Sedang':s<=19?'Sedang–berat':'Berat';
+  let cls=s<=4?'ok':s<=14?'warn':'danger';
+  let extra=rows([['Kategori',lab],['Item 9',v[8]===0?'0 — tidak ada':'Positif']]);
+  resultBox('phqResult',s,27,lab,cls,extra);
+  saveToHistory('PHQ-9', s, lab);
+}
+
+function calcBishop(){
+  let d=+$('bD').value,e=+$('bE').value,s=+$('bS').value,c=+$('bC').value,p=+$('bP').value,t=d+e+s+c+p;
+  let lab=t<=5?'Unfavorable':t<=7?'Intermediate':'Favorable';
+  let cls=t<=5?'danger':t<=7?'warn':'ok';
+  resultBox('bishopResult',t,13,lab,cls,rows([['Dilatasi',d],['Efasemen',e],['Station',s],['Konsistensi',c],['Posisi',p]]));
+  saveToHistory('Bishop', t, lab);
+}
+
+function calcQSOFA(){
+  let rrRaw = $('qRR').value, sbpRaw = $('qSBP').value, ment = +$('qMent').value;
+  if (!rrRaw || !sbpRaw) { resultBox('qsofaResult', '—', 3, 'Data belum lengkap', 'warn'); return; }
+  let rr = +rrRaw, sbp = +sbpRaw;
+  if (rr < 0 || rr > 80 || sbp < 0 || sbp > 300) { resultBox('qsofaResult', 'Error', '', 'Input tidak valid.', 'danger'); return; }
+  let a = rr >= 22 ? 1 : 0, b = ment, c = sbp <= 100 ? 1 : 0, s = a + b + c;
+  let lab = s >= 2 ? '≥2 — evaluasi segera' : '<2 — tidak memenuhi kriteria';
+  let cls = s >= 2 ? 'danger' : 'ok';
+  resultBox('qsofaResult', s, 3, lab, cls, rows([['RR ≥22', a], ['Altered mentation', b], ['SBP ≤100', c]]));
+  saveToHistory('qSOFA', s, lab);
+}
+
+function calcCURB(){
+  let a=['cC','cU','cR','cB','cA'].map(id=>+$ (id).value),s=a.reduce((x,y)=>x+y,0);
+  let lab=s===0?'Risiko rendah':s<=2?'Risiko meningkat':'Risiko tinggi';
+  let cls=s===0?'ok':s<=2?'warn':'danger';
+  resultBox('curbResult',s,5,lab,cls,rows([['Confusion',a[0]],['Urea >7 mmol/L',a[1]],['RR ≥30',a[2]],['BP rendah',a[3]],['Age ≥65',a[4]]]));
+  saveToHistory('CURB-65', s, lab);
+}
+
+function calcCHA(){
+  let ids=['aCHF','aHT','aAge','aDM','aStroke','aVasc','aSex'],a=ids.map(id=>+$ (id).value),s=a.reduce((x,y)=>x+y,0);
+  resultBox('chaResult',s,9,'Total',s>=2?'warn':'ok',rows([['CHF',a[0]],['Hypertension',a[1]],['Age',a[2]],['Diabetes',a[3]],['Stroke',a[4]],['Vascular',a[5]],['Sex',a[6]]]));
+  saveToHistory('CHA₂DS₂-VASc', s, s>=2?'Risiko Tinggi':'Risiko Rendah');
+}
+
+const wellsItems=[['Clinical signs of DVT',3],['PE is most likely',3],['Heart rate >100/min',1.5],['Immobilization ≥3 days / surgery',1.5],['Previous DVT/PE',1.5],['Hemoptysis',1],['Malignancy',1]];
+$('wellsForm').innerHTML=wellsItems.map((x,i)=>`<div class="item"><label class="opt"><input type="checkbox" id="w${i}"><span>${esc(x[0])} <b>(+${x[1]})</b></span></label></div>`).join('');
+function calcWells(){
+  let s=wellsItems.reduce((a,x,i)=>a+($('w'+i).checked?x[1]:0),0);
+  let lab=s<=4?'PE unlikely': 'PE likely';
+  let cls=s<=4?'ok':'danger';
+  resultBox('wellsResult',s,'','Wells PE — '+lab,cls,rows(wellsItems.map((x,i)=>[x[0],$('w'+i).checked?'+'+x[1]:'0'])));
+  saveToHistory('Wells PE', s, lab);
+}
+
+calcGCS();calcBishop();calcQSOFA();calcCURB();calcCHA();calcWells();calcNIHSS();calcPHQ();
+</script>
+</body>
+</html>
